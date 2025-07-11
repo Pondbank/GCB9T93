@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Puzzle Cache</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 2em; }
+    .stage { display: none; }
+    .active { display: block; }
+    button { padding: 0.5em 1em; margin-top: 1em; }
+    canvas { border: 1px solid black; margin-top: 1em; }
+    input { padding: 0.3em; }
+  </style>
+</head>
+<body>
+  <h1>Puzzle Cache Adventure</h1>
+
+  <!-- Stage 1: Tic Tac Toe -->
+  <div id="stage1" class="stage active">
+    <h2>Stage 1: Beat the AI at Tic Tac Toe</h2>
+    <canvas id="ttt" width="300" height="300"></canvas>
+    <p id="tttMessage"></p>
+    <button id="tttNext" style="display:none" onclick="showStage(2)">Next Puzzle</button>
+  </div>
+
+  <!-- Stage 2: Geocaching Trivia -->
+  <div id="stage2" class="stage">
+    <h2>Stage 2: Geocaching Trivia</h2>
+    <form id="triviaForm">
+      <p>1. What year did geocaching begin?<br>
+        <input type="text" id="q1" /></p>
+      <p>2. What is the name of the original geocaching website?<br>
+        <input type="text" id="q2" /></p>
+      <p>3. What type of container is often used for small caches?<br>
+        <input type="text" id="q3" /></p>
+      <button type="button" onclick="checkTrivia()">Submit Answers</button>
+    </form>
+    <p id="triviaResult"></p>
+    <button id="triviaNext" style="display:none" onclick="showStage(3)">Next Puzzle</button>
+  </div>
+
+  <!-- Stage 3: Cipher -->
+  <div id="stage3" class="stage">
+    <h2>Stage 3: Decode the Cipher</h2>
+    <p>Caesar cipher (shift 3): <code>Jhfdfdkklqj25</code></p>
+    <input id="cipherInput" placeholder="Your answer" />
+    <button onclick="checkCipher()">Check</button>
+    <p id="cipherResult"></p>
+    <button id="cipherNext" style="display:none" onclick="showStage(4)">Next Puzzle</button>
+  </div>
+
+  <!-- Stage 4: Guess the Number -->
+  <div id="stage4" class="stage">
+    <h2>Stage 4: Guess the Number (1–100)</h2>
+    <input id="guessInput" type="number" min="1" max="100" />
+    <button onclick="checkGuess()">Guess</button>
+    <p id="guessResult"></p>
+    <button id="guessNext" style="display:none" onclick="showStage('final')">Finish</button>
+  </div>
+
+  <!-- Final -->
+  <div id="final" class="stage">
+    <h2>🎉 Congratulations!</h2>
+    <p><strong>Coordinates:</strong> N 51° 29.123 W 000° 05.456</p>
+    <p><strong>Hint:</strong> Under the bench near the tree.</p>
+  </div>
+
+  <script>
+    function showStage(id) {
+      document.querySelectorAll(".stage").forEach(el => el.classList.remove("active"));
+      document.getElementById(typeof id === 'number' ? `stage${id}` : id).classList.add("active");
+    }
+
+    // Tic Tac Toe
+    const canvas = document.getElementById("ttt");
+    const ctx = canvas.getContext("2d");
+    const size = 100;
+    let board = Array(9).fill("");
+    let currentPlayer = "X";
+    let tttGameOver = false;
+
+    function drawBoard() {
+      ctx.clearRect(0, 0, 300, 300);
+      for (let i = 1; i <= 2; i++) {
+        ctx.moveTo(i * size, 0);
+        ctx.lineTo(i * size, 300);
+        ctx.moveTo(0, i * size);
+        ctx.lineTo(300, i * size);
+      }
+      ctx.stroke();
+      board.forEach((val, i) => {
+        if (val) {
+          const x = (i % 3) * size + size / 2;
+          const y = Math.floor(i / 3) * size + size / 2;
+          ctx.font = "48px sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(val, x, y);
+        }
+      });
+    }
+
+    function checkWin(player) {
+      const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+      return lines.some(([a,b,c]) => board[a] === player && board[b] === player && board[c] === player);
+    }
+
+    function aiMove() {
+      const empty = board.map((val, i) => val === "" ? i : null).filter(i => i !== null);
+      const move = empty[Math.floor(Math.random() * empty.length)];
+      board[move] = "O";
+    }
+
+    canvas.addEventListener("click", e => {
+      if (tttGameOver) return;
+      const x = Math.floor(e.offsetX / size);
+      const y = Math.floor(e.offsetY / size);
+      const idx = y * 3 + x;
+      if (board[idx] === "") {
+        board[idx] = "X";
+        if (checkWin("X")) {
+          document.getElementById("tttMessage").textContent = "You win!";
+          tttGameOver = true;
+          document.getElementById("tttNext").style.display = "inline";
+        } else {
+          aiMove();
+          if (checkWin("O")) {
+            document.getElementById("tttMessage").textContent = "AI wins. Try again!";
+            board = Array(9).fill("");
+          }
+        }
+        drawBoard();
+      }
+    });
+
+    drawBoard();
+
+    // Trivia check
+    function checkTrivia() {
+      const a = document.getElementById("q1").value.trim();
+      const b = document.getElementById("q2").value.trim().toLowerCase();
+      const c = document.getElementById("q3").value.trim().toLowerCase();
+      if (a === "2000" && b.includes("geocaching.com") && (c.includes("film") || c.includes("canister") || c.includes("tube"))) {
+        document.getElementById("triviaResult").textContent = "Correct!";
+        document.getElementById("triviaNext").style.display = "inline";
+      } else {
+        document.getElementById("triviaResult").textContent = "Check your answers and try again.";
+      }
+    }
+
+    // Cipher check
+    function checkCipher() {
+      const input = document.getElementById("cipherInput").value.trim();
+      if (input === "Geocaching25") {
+        document.getElementById("cipherResult").textContent = "Correct!";
+        document.getElementById("cipherNext").style.display = "inline";
+      } else {
+        document.getElementById("cipherResult").textContent = "Try again.";
+      }
+    }
+
+    // Number Guess
+    const secretNumber = Math.floor(Math.random() * 100) + 1;
+    function checkGuess() {
+      const guess = parseInt(document.getElementById("guessInput").value);
+      const result = document.getElementById("guessResult");
+      if (isNaN(guess)) return result.textContent = "Enter a number!";
+      if (guess === secretNumber) {
+        result.textContent = "Correct!";
+        document.getElementById("guessNext").style.display = "inline";
+      } else if (guess < secretNumber) {
+        result.textContent = "Too low!";
+      } else {
+        result.textContent = "Too high!";
+      }
+    }
+  </script>
+</body>
+</html>
